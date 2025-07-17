@@ -58,3 +58,22 @@ export async function deleteAllAlert(req, res) {
     res.status(500).json({ status: false, message: "Internal server error" });
   }
 }
+
+export async function getAlertById(req, res) {
+  const { id } = req.params;
+  try {
+    const alert = await prisma.alert.findUnique({
+      where: { id: parseInt(id, 10) },
+    });
+    if (!alert) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Alert not found" });
+    }
+    res.status(200).json({ status: true, data: alert });
+  } catch (err) {
+    console.error("Error at controllers/alertController/getAlertById:", err);
+    res.status(500).json({ status: false, message: "Internal server error" });
+  }
+}
+

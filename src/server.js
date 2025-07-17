@@ -15,7 +15,7 @@ app.use(bodyParser.json({ limit: "10mb" }));
 
 // Routes
 // app.use("/api/alerts", alertRoutes);
-app.use("/api", alertRouter);
+app.use("/api/alert", alertRouter);
 
 // WebSocket
 setupWebSocket(server);
