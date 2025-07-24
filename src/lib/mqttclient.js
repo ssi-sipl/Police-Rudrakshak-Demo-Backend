@@ -19,7 +19,7 @@ const client = mqtt.connect(MQTT_BROKER_URL, {
 
 client.on("connect", () => {
   console.log("✅ MQTT connected");
-  client.subscribe("app/detection");
+  client.subscribe(MQTT_BROKER_TOPIC);
 });
 
 client.on("message", async (topic, payload) => {
