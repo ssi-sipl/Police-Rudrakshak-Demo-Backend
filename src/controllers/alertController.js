@@ -1,5 +1,9 @@
 import prisma from "../lib/prisma.js";
 import { broadcastAlert } from "../lib/websocket.js";
+import fs from "fs";
+import path from "path";
+import { v4 as uuidv4 } from "uuid";
+import { supabase } from "../lib/supabase.js";
 
 export async function handleAlert(req, res) {
   try {
@@ -13,6 +17,27 @@ export async function handleAlert(req, res) {
     if (!type || !message || !image || !confidence) {
       return res.status(400).json({ error: "Missing fields" });
     }
+
+    // Handle base64 image saving
+    // Handle raw base64 image saving
+    // let savedImagePath = null;
+    // try {
+    //   const buffer = Buffer.from(image, "base64"); // no prefix stripping needed
+
+    //   const fileName = `${uuidv4()}.jpg`; // change to .png or .webp if needed
+    //   const uploadDir = path.join(process.cwd(), "public", "uploads");
+
+    //   // Ensure the directory exists
+    //   fs.mkdirSync(uploadDir, { recursive: true });
+
+    //   const filePath = path.join(uploadDir, fileName);
+    //   fs.writeFileSync(filePath, buffer);
+
+    //   savedImagePath = `/uploads/${fileName}`;
+    // } catch (err) {
+    //   console.error("Image save failed:", err);
+    //   return res.status(500).json({ error: "Failed to save image" });
+    // }
 
     try {
       const newAlert = await prisma.alert.create({
@@ -76,4 +101,3 @@ export async function getAlertById(req, res) {
     res.status(500).json({ status: false, message: "Internal server error" });
   }
 }
-

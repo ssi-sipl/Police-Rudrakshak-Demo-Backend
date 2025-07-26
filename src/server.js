@@ -5,7 +5,8 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import { setupWebSocket } from "./lib/websocket.js";
 import alertRouter from "./routes/alertRouter.js";
-import "./lib/mqttclient.js"; 
+import processRouter from "./routes/processRouter.js";
+import "./lib/mqttclient.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -17,6 +18,7 @@ app.use(bodyParser.json({ limit: "10mb" }));
 // Routes
 // app.use("/api/alerts", alertRoutes);
 app.use("/api/alert", alertRouter);
+app.use("/api/process", processRouter);
 
 // WebSocket
 setupWebSocket(server);
