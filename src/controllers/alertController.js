@@ -1,9 +1,5 @@
 import prisma from "../lib/prisma.js";
 import { broadcastAlert } from "../lib/websocket.js";
-import fs from "fs";
-import path from "path";
-import { v4 as uuidv4 } from "uuid";
-import { supabase } from "../lib/supabase.js";
 
 export async function handleAlert(req, res) {
   try {

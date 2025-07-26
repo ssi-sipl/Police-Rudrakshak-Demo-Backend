@@ -15,10 +15,42 @@ datasource db {
 }
 
 model Alert {
-  id         Int      @id @default(autoincrement())
-  type  String
-  message    String
-  image      String
-  confidence Float 
-  createdAt  DateTime @default(now())
+  id          Int      @id @default(autoincrement())
+  type        String
+  message     String
+  image       String
+  confidence  Float
+  createdAt   DateTime @default(now())
+
+  // Drone association
+  droneId     Int
+  drone       Drone    @relation(fields: [droneId], references: [id])
+}
+
+model Area {
+  id      Int     @id @default(autoincrement())
+  name    String
+  area_id String  @unique
+  drones  Drone[]
+}
+
+model Drone {
+  id       Int      @id @default(autoincrement())
+  name     String
+  drone_id String   @unique
+  area_id  String
+  areaRef  Int
+  area     Area     @relation(fields: [areaRef], references: [id])
+  
+  // Alert reverse relation
+  alerts   Alert[]
+}
+
+model Sensor {
+  id        Int     @id @default(autoincrement())
+  name      String
+  area_id   String
+  sensor_id String  @unique
+  latitude  Float
+  longitude Float
 }

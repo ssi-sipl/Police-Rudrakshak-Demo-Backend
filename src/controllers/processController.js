@@ -7,14 +7,20 @@ export async function controlDetectionProcess(req, res) {
         .status(400)
         .json({ status: false, message: "Request body is undefined" });
     }
-    const { action } = req.body;
+    const { action, drone_id } = req.body;
     if (!["on", "off"].includes(action)) {
       return res
         .status(400)
-        .json({ error: "Invalid action. Use 'on' or 'off'" });
+        .json({ status: false, message: "Invalid action. Use 'on' or 'off'" });
+    }
+    if (!drone_id) {
+      return res
+        .status(400)
+        .json({ status: false, message: "Drone ID is required" });
     }
     const topic = process.env.MQTT_PROCESS_DETECTION_TOPIC;
-    mqttClient.publish(topic, action, {}, (err) => {
+    const payload = JSON.stringify({ action, drone_id });
+    mqttClient.publish(topic, payload, {}, (err) => {
       if (err) {
         console.error("❌ MQTT publish error:", err.message);
         return res
@@ -44,14 +50,22 @@ export async function controlFacialRecognitionProcess(req, res) {
         .status(400)
         .json({ status: false, message: "Request body is undefined" });
     }
-    const { action } = req.body;
+    const { action, drone_id } = req.body;
     if (!["on", "off"].includes(action)) {
       return res
         .status(400)
-        .json({ error: "Invalid action. Use 'on' or 'off'" });
+        .json({ status: false, message: "Invalid action. Use 'on' or 'off'" });
     }
+    if (!drone_id) {
+      return res
+        .status(400)
+        .json({ status: false, message: "Drone ID is required" });
+    }
+    // Ensure the MQTT topic is set correctly
     const topic = process.env.MQTT_PROCESS_FACIAL_RECOGNITION_TOPIC;
-    mqttClient.publish(topic, action, {}, (err) => {
+    const payload = JSON.stringify({ action, drone_id });
+
+    mqttClient.publish(topic, payload, {}, (err) => {
       if (err) {
         console.error("❌ MQTT publish error:", err.message);
         return res
