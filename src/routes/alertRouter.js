@@ -1,15 +1,18 @@
 import express from "express";
 import {
+  createAlert,
   deleteAllAlert,
   getAlertById,
   getAlerts,
+  getAlertsByDroneId,
   handleAlert,
 } from "../controllers/alertController.js";
 
 const router = express.Router();
 
-router.post("/", handleAlert);
+router.post("/", createAlert);
 router.get("/", getAlerts);
+router.get("/drone/:droneId", getAlertsByDroneId);
 router.delete("/", deleteAllAlert);
 router.get("/:id", getAlertById);
 

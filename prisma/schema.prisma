@@ -18,7 +18,7 @@ model Alert {
   id          Int      @id @default(autoincrement())
   type        String
   message     String
-  image       String
+  // image       String
   confidence  Float
   createdAt   DateTime @default(now())
 
