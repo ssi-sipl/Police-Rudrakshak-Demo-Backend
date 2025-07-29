@@ -18,3 +18,13 @@ export function broadcastAlert(alert) {
     }
   });
 }
+
+export function broadcastLocation(data) {
+  if (!wss) return;
+
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(data);
+    }
+  });
+}
