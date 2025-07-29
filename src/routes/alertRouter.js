@@ -5,12 +5,13 @@ import {
   getAlertById,
   getAlerts,
   getAlertsByDroneId,
-  handleAlert,
+  handleFacioMatcherAlert,
 } from "../controllers/alertController.js";
 
 const router = express.Router();
 
 router.post("/", createAlert);
+router.post("/fm/:droneId", handleFacioMatcherAlert);
 router.get("/", getAlerts);
 router.get("/drone/:droneId", getAlertsByDroneId);
 router.delete("/", deleteAllAlert);

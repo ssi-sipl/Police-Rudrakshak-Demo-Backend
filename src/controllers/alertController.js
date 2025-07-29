@@ -1,62 +1,6 @@
 import prisma from "../lib/prisma.js";
+import { supabase } from "../lib/supabase.js";
 import { broadcastAlert } from "../lib/websocket.js";
-
-export async function handleAlert(req, res) {
-  try {
-    if (!req.body) {
-      return res
-        .status(400)
-        .json({ status: false, message: "Request body is undefined" });
-    }
-    const { type, message, image, confidence } = req.body;
-
-    if (!type || !message || !image || !confidence) {
-      return res.status(400).json({ error: "Missing fields" });
-    }
-
-    // Handle base64 image saving
-    // Handle raw base64 image saving
-    // let savedImagePath = null;
-    // try {
-    //   const buffer = Buffer.from(image, "base64"); // no prefix stripping needed
-
-    //   const fileName = `${uuidv4()}.jpg`; // change to .png or .webp if needed
-    //   const uploadDir = path.join(process.cwd(), "public", "uploads");
-
-    //   // Ensure the directory exists
-    //   fs.mkdirSync(uploadDir, { recursive: true });
-
-    //   const filePath = path.join(uploadDir, fileName);
-    //   fs.writeFileSync(filePath, buffer);
-
-    //   savedImagePath = `/uploads/${fileName}`;
-    // } catch (err) {
-    //   console.error("Image save failed:", err);
-    //   return res.status(500).json({ error: "Failed to save image" });
-    // }
-
-    try {
-      const newAlert = await prisma.alert.create({
-        data: { type, message, image, confidence },
-      });
-      console.log("New alert created:", newAlert);
-      // Broadcast to WebSocket clients
-      broadcastAlert(newAlert);
-
-      res.status(201).json({
-        status: true,
-        message: "Alert Created and Send to the UI",
-        data: newAlert,
-      });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: "Server error" });
-    }
-  } catch (err) {
-    console.error("Error at controllers/alertController/handleAlert:", err);
-    res.status(500).json({ status: false, message: "Internal server error" });
-  }
-}
 
 export const createAlert = async (req, res) => {
   try {
@@ -111,6 +55,139 @@ export const createAlert = async (req, res) => {
     });
   } catch (error) {
     console.error("Error at controllers/alertController/createAlert:", error);
+    return res
+      .status(500)
+      .json({ status: false, message: "Internal server error" });
+  }
+};
+
+export const handleFacioMatcherAlert = async (req, res) => {
+  try {
+    if (!req.body) {
+      return res
+        .status(400)
+        .json({ status: false, message: "Request body is undefined" });
+    }
+
+    const drone_id = req.params.droneId;
+    if (!drone_id) {
+      return res
+        .status(400)
+        .json({ status: false, message: "Invalid Drone ID format" });
+    }
+    const {
+      ts,
+      detectedMug64,
+      detectedGender,
+      matchedMug64,
+      matchedScore,
+      matchedName64,
+      matchedCategory64,
+    } = req.body;
+
+    if (
+      !ts ||
+      !detectedMug64 ||
+      !detectedGender ||
+      !matchedMug64 ||
+      !matchedScore ||
+      !matchedName64 ||
+      !matchedCategory64
+    ) {
+      return res
+        .status(400)
+        .json({ status: false, message: "Missing required fields" });
+    }
+    const type = "person";
+    const name = Buffer.from(matchedName64, "base64").toString("utf-8");
+    const message = `Detected ${name} (${detectedGender})`;
+    const confidence = parseFloat(matchedScore);
+    const mugBase64 = detectedMug64.replace(/^data:image\/\w+;base64,/, "");
+    const mugBuffer = Buffer.from(mugBase64, "base64");
+    const mugFileName = `mugs/mug_${Date.now()}.jpg`;
+    const mugStoragePath = mugFileName;
+
+    if (!type || !message || !confidence || !drone_id) {
+      return res
+        .status(400)
+        .json({ status: false, message: "Missing required fields" });
+    }
+
+    // Check if drone exists
+    const drone = await prisma.drone.findUnique({
+      where: { drone_id: drone_id },
+    });
+    if (!drone) {
+      return res
+        .status(404)
+        .json({ status: false, message: "Drone not found" });
+    }
+
+    const mugUploadResult = await supabase.storage
+      .from("images") // or use a separate bucket like 'mugs' if needed
+      .upload(mugStoragePath, mugBuffer, {
+        contentType: "image/jpeg",
+        upsert: true,
+        cacheControl: "3600",
+      });
+
+    let publicMugUrl = null;
+    if (mugUploadResult.error) {
+      console.error(
+        "❌ Failed to upload mug image:",
+        mugUploadResult.error.message
+      );
+    } else {
+      console.log("✅ Mug image uploaded:", mugFileName);
+
+      // Optionally get public URL for mugshot
+      const { data: mugUrlData, error: mugUrlError } = supabase.storage
+        .from("images")
+        .getPublicUrl(mugStoragePath);
+
+      if (mugUrlError) {
+        console.error("❌ Failed to get mug image URL:", mugUrlError.message);
+        return res
+          .status(500)
+          .json({ status: false, message: "Failed to get mug image URL" });
+      } else {
+        console.log("🌐 Mugshot URL:", mugUrlData.publicUrl);
+        publicMugUrl = mugUrlData.publicUrl;
+      }
+    }
+
+    const newAlert = await prisma.alert.create({
+      data: {
+        type,
+        message,
+        confidence: parseFloat(confidence),
+        image: publicMugUrl,
+        drone: {
+          connect: { id: drone.id },
+        },
+      },
+    });
+
+    try {
+      broadcastAlert(newAlert);
+    } catch (err) {
+      console.error("❌ Failed to broadcast alert:", err.message);
+      return res.status(500).json({
+        status: false,
+        message: "Failed to broadcast alert",
+      });
+    }
+
+    return res.status(201).json({
+      status: true,
+      message: "Alert Created and Send to the UI",
+      data: newAlert,
+    });
+  } catch (error) {
+    console.error(
+      "Error at controllers/alertController/handleFacioMatcherAlert:",
+      error
+    );
     return res
       .status(500)
       .json({ status: false, message: "Internal server error" });
