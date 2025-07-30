@@ -10,17 +10,20 @@ export function setupWebSocket(server) {
   });
 }
 
-export function broadcastAlert(alert) {
+export function broadcastAlert(alert, source = "onboard") {
   if (!wss) return;
+  const payload = { type: "alert", source: source, data: alert };
   wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(alert));
+      client.send(JSON.stringify(payload));
     }
   });
 }
 
 export function broadcastLocation(data) {
   if (!wss) return;
+
+  const payload = { type: "location", data };
 
   wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {

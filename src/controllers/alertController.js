@@ -1,6 +1,7 @@
 import prisma from "../lib/prisma.js";
 import { supabase } from "../lib/supabase.js";
 import { broadcastAlert } from "../lib/websocket.js";
+import { v4 as uuidv4 } from "uuid";
 
 export const createAlert = async (req, res) => {
   try {
@@ -9,7 +10,8 @@ export const createAlert = async (req, res) => {
         .status(400)
         .json({ status: false, message: "Request body is undefined" });
     }
-    const { type, message, confidence, drone_id } = req.body;
+
+    const { type, message, confidence, drone_id, image } = req.body;
 
     if (!type || !message || !confidence || !drone_id) {
       return res
@@ -17,27 +19,81 @@ export const createAlert = async (req, res) => {
         .json({ status: false, message: "Missing required fields" });
     }
 
-    // Check if drone exists
+    // Step 1: Check if drone exists
     const drone = await prisma.drone.findUnique({
       where: { drone_id: drone_id },
     });
+
     if (!drone) {
       return res
         .status(404)
         .json({ status: false, message: "Drone not found" });
     }
 
+    let publicUrl = null;
+
+    // Step 2: Handle image if present
+    if (image) {
+      try {
+        const imageBuffer = Buffer.from(image, "base64");
+        const fileName = `image_${Date.now()}_${uuidv4()}.jpg`;
+        const storagePath = `alerts/${fileName}`;
+
+        const uploadResult = await supabase.storage
+          .from("images")
+          .upload(storagePath, imageBuffer, {
+            contentType: "image/jpeg",
+            upsert: true,
+            cacheControl: "3600",
+          });
+
+        if (uploadResult.error) {
+          console.error(
+            "❌ Upload to Supabase failed:",
+            uploadResult.error.message
+          );
+          return res
+            .status(500)
+            .json({ status: false, message: "Failed to upload image" });
+        }
+
+        // Optional delay to ensure CDN propagates
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+
+        const { data: publicUrlData, error: urlError } = supabase.storage
+          .from("images")
+          .getPublicUrl(storagePath);
+
+        if (urlError) {
+          console.error("❌ Failed to get public URL:", urlError.message);
+          return res
+            .status(500)
+            .json({ status: false, message: "Failed to get public URL" });
+        }
+
+        publicUrl = publicUrlData.publicUrl;
+      } catch (err) {
+        console.error("❌ Image upload exception:", err);
+        return res
+          .status(500)
+          .json({ status: false, message: "Image processing failed" });
+      }
+    }
+
+    // Step 3: Create alert in database
     const newAlert = await prisma.alert.create({
       data: {
         type,
         message,
         confidence: parseFloat(confidence),
+        image: publicUrl || undefined,
         drone: {
           connect: { id: drone.id },
         },
       },
     });
 
+    // Step 4: Broadcast
     try {
       broadcastAlert(newAlert);
     } catch (err) {
@@ -50,7 +106,7 @@ export const createAlert = async (req, res) => {
 
     return res.status(201).json({
       status: true,
-      message: "Alert Created and Send to the UI",
+      message: "Alert Created and Sent to UI",
       data: newAlert,
     });
   } catch (error) {
@@ -162,6 +218,7 @@ export const handleFacioMatcherAlert = async (req, res) => {
         message,
         confidence: parseFloat(confidence),
         image: publicMugUrl,
+        source: "offboard",
         drone: {
           connect: { id: drone.id },
         },
@@ -169,7 +226,8 @@ export const handleFacioMatcherAlert = async (req, res) => {
     });
 
     try {
-      broadcastAlert(newAlert);
+      // broadcastAlert(newAlert);
+      broadcastAlert(newAlert, "offboard");
     } catch (err) {
       console.error("❌ Failed to broadcast alert:", err.message);
       return res.status(500).json({

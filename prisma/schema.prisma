@@ -20,6 +20,7 @@ model Alert {
   message     String
   image       String
   confidence  Float
+  source     String @default("onboard") // onboard or offboard
   createdAt   DateTime @default(now())
 
   // Drone association
