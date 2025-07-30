@@ -29,6 +29,10 @@ app.use("/api/sensors", sensorRouter);
 // WebSocket
 setupWebSocket(server);
 
+app.get("/", (req, res) => {
+  res.send("The Backend is running");
+});
+
 const PORT = 5000;
 server.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
