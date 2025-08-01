@@ -7,6 +7,7 @@ import {
   getAreaByDroneId,
   updateDrone,
   deleteDrone,
+  DroneCallback,
 } from "../controllers/droneController.js";
 
 const router = express.Router();
@@ -18,5 +19,6 @@ router.post("/dropPayload", dropPayload);
 router.get("/:drone_id", getAreaByDroneId);
 router.post("/update/:id", updateDrone);
 router.post("/delete/:id", deleteDrone);
+router.post("/droneCallback", DroneCallback);
 
 export default router;

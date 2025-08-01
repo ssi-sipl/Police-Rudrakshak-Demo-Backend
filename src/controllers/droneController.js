@@ -176,6 +176,7 @@ export async function sendDrone(req, res) {
     }
 
     const droneData = {
+      event: "send_drone",
       drone_id,
       area_id,
       latitude,
@@ -193,6 +194,8 @@ export async function sendDrone(req, res) {
           .status(500)
           .json({ status: false, message: "Failed to send data to drone." });
       }
+
+      console.log("Drone Patrol command sent successfully:", droneData);
 
       return res.status(200).json({
         status: true,
@@ -261,6 +264,7 @@ export async function dropPayload(req, res) {
     }
 
     const dropData = {
+      event: "send_patrol",
       drone_id,
       area_id,
     };
@@ -275,9 +279,95 @@ export async function dropPayload(req, res) {
           .json({ status: false, message: "Failed to send command to drone." });
       }
 
+      console.log("Drone Patrol command sent successfully:", dropData);
+
       return res.status(200).json({
         status: true,
-        message: "Drone drop command sent successfully.",
+        message: "Drone Patrol command sent successfully.",
+        data: dropData,
+      });
+    });
+  } catch (error) {
+    console.error("Error at controllers/droneControllers/dropPayload:", error);
+    res.status(500).json({
+      status: false,
+      message: "Internal server error",
+    });
+  }
+}
+
+export async function DroneCallback(req, res) {
+  try {
+    if (!req.body) {
+      return res.status(400).json({
+        status: false,
+        message: "Missing request body",
+      });
+    }
+
+    const { drone_id, area_id } = req.body;
+
+    if (!drone_id || typeof drone_id !== "string" || drone_id.trim() === "") {
+      return res.status(400).json({
+        status: false,
+        message:
+          'Invalid input: "drone_id" is required and must be a non-empty string.',
+      });
+    }
+
+    if (!area_id || typeof area_id !== "string" || area_id.trim() === "") {
+      return res.status(400).json({
+        status: false,
+        message:
+          'Invalid input: "area_id" is required and must be a non-empty string.',
+      });
+    }
+
+    // Check if drone exists
+    const droneExists = await prisma.drone.findUnique({
+      where: { drone_id: drone_id },
+    });
+
+    if (!droneExists) {
+      return res.status(404).json({
+        status: false,
+        message: "Drone with the provided ID does not exist.",
+      });
+    }
+
+    // Check if area exists
+    const areaExists = await prisma.area.findUnique({
+      where: { area_id: area_id },
+    });
+
+    if (!areaExists) {
+      return res.status(404).json({
+        status: false,
+        message: "Area with the provided ID does not exist.",
+      });
+    }
+
+    const dropData = {
+      event: "callback_drone",
+      drone_id,
+      area_id,
+    };
+
+    const topic = process.env.MQTT_BROKER_TOPIC;
+
+    mqttClient.publish(topic, JSON.stringify(dropData), (err) => {
+      if (err) {
+        console.error("MQTT Publish Error:", err);
+        return res
+          .status(500)
+          .json({ status: false, message: "Failed to send command to drone." });
+      }
+
+      console.log("Drone Patrol command sent successfully:", dropData);
+
+      return res.status(200).json({
+        status: true,
+        message: "Drone Callback command sent successfully.",
         data: dropData,
       });
     });
