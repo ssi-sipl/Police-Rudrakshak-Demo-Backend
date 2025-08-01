@@ -25,7 +25,7 @@ model Alert {
 
   // Drone association
   droneId     Int
-  drone       Drone    @relation(fields: [droneId], references: [id])
+  drone       Drone    @relation(fields: [droneId], references: [id], onDelete: Cascade)
 }
 
 model Area {
@@ -41,7 +41,7 @@ model Drone {
   drone_id String   @unique
   area_id  String
   areaRef  Int
-  area     Area     @relation(fields: [areaRef], references: [id])
+  area     Area     @relation(fields: [areaRef], references: [id], onDelete: Cascade)
   
   // Alert reverse relation
   alerts   Alert[]

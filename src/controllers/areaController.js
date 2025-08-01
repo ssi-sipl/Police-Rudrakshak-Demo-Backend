@@ -56,13 +56,44 @@ export async function createArea(req, res) {
   }
 }
 
+// export async function getAllAreas(req, res) {
+//   try {
+//     const areas = await prisma.area.findMany();
+
+//     if (!areas.length) {
+//       return res.status(404).json({ status: true, message: "No areas found" });
+//     }
+
+//     res.status(200).json({
+//       status: true,
+//       message: "Areas fetched successfully",
+//       data: areas,
+//     });
+//   } catch (error) {
+//     console.error("Error at getAllAreas:", error);
+//     res.status(500).json({ status: false, message: "Internal server error" });
+//   }
+// }
+
 export async function getAllAreas(req, res) {
   try {
-    const areas = await prisma.area.findMany();
+    const areas = await prisma.area.findMany({
+      include: {
+        _count: {
+          select: { drones: true },
+        },
+      },
+    });
 
     if (!areas.length) {
       return res.status(404).json({ status: true, message: "No areas found" });
     }
+
+    // Optionally, map to include droneCount key explicitly
+    // const areasWithDroneCount = areas.map((area) => ({
+    //   ...area,
+    //   droneCount: area._count.drones,
+    // }));
 
     res.status(200).json({
       status: true,
