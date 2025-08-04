@@ -127,6 +127,8 @@ export const handleFacioMatcherAlert = async (req, res) => {
         .json({ status: false, message: "Request body is undefined" });
     }
 
+    console.log("🚁 Request body:", req.body);
+
     const drone_id = req.params.droneId;
     if (!drone_id) {
       console.log("🚁 Missing drone_id in request params");
