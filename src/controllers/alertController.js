@@ -120,6 +120,7 @@ export const createAlert = async (req, res) => {
 export const handleFacioMatcherAlert = async (req, res) => {
   try {
     if (!req.body) {
+      console.log("🚁 Request body is undefined");
       return res
         .status(400)
         .json({ status: false, message: "Request body is undefined" });
@@ -127,6 +128,7 @@ export const handleFacioMatcherAlert = async (req, res) => {
 
     const drone_id = req.params.droneId;
     if (!drone_id) {
+      console.log("🚁 Missing drone_id in request params");
       return res
         .status(400)
         .json({ status: false, message: "Invalid Drone ID format" });
@@ -150,6 +152,7 @@ export const handleFacioMatcherAlert = async (req, res) => {
       !matchedName64 ||
       !matchedCategory64
     ) {
+      console.log("🚁 Missing required fields in request body");
       return res
         .status(400)
         .json({ status: false, message: "Missing required fields" });
@@ -164,6 +167,7 @@ export const handleFacioMatcherAlert = async (req, res) => {
     const mugStoragePath = mugFileName;
 
     if (!type || !message || !confidence || !drone_id) {
+      console.log("🚁 Missing required fields for alert creation");
       return res
         .status(400)
         .json({ status: false, message: "Missing required fields" });
@@ -189,7 +193,7 @@ export const handleFacioMatcherAlert = async (req, res) => {
 
     let publicMugUrl = null;
     if (mugUploadResult.error) {
-      console.error(
+      console.log(
         "❌ Failed to upload mug image:",
         mugUploadResult.error.message
       );
@@ -229,20 +233,21 @@ export const handleFacioMatcherAlert = async (req, res) => {
       // broadcastAlert(newAlert);
       broadcastAlert(newAlert, "offboard");
     } catch (err) {
-      console.error("❌ Failed to broadcast alert:", err.message);
+      console.log("❌ Failed to broadcast alert:", err.message);
       return res.status(500).json({
         status: false,
         message: "Failed to broadcast alert",
       });
     }
 
+    console.log("🚁 Alert created and broadcasted:", newAlert);
     return res.status(201).json({
       status: true,
       message: "Alert Created and Send to the UI",
       data: newAlert,
     });
   } catch (error) {
-    console.error(
+    console.log(
       "Error at controllers/alertController/handleFacioMatcherAlert:",
       error
     );
