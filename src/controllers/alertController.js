@@ -119,6 +119,7 @@ export const createAlert = async (req, res) => {
 
 export const handleFacioMatcherAlert = async (req, res) => {
   try {
+    console.log("🚁 Handling FacioMatcher alert for drone ID:", req.params);
     if (!req.body) {
       console.log("🚁 Request body is undefined");
       return res
