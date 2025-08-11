@@ -48,10 +48,11 @@ client.on("connect", () => {
 });
 
 client.on("message", async (topic, message) => {
+  let sessionId;
   if (topic === MQTT_BROKER_TOPIC) {
     // Handle alert messages
     try {
-      const sessionId = await getActiveSessionId();
+      sessionId = await getActiveSessionId();
       console.log("📂 Active session ID:", sessionId);
       if (sessionId === null) {
         console.error("❌ No active session found. Cannot process alert.");
@@ -169,6 +170,9 @@ client.on("message", async (topic, message) => {
             image: publicUrl,
             drone: {
               connect: { id: drone.id },
+            },
+            session: {
+              connect: { id: sessionId },
             },
           },
         });

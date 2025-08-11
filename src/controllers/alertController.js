@@ -119,8 +119,9 @@ export const createAlert = async (req, res) => {
 };
 
 export const handleFacioMatcherAlert = async (req, res) => {
+  let sessionId;
   try {
-    const sessionId = await getActiveSessionId();
+    sessionId = await getActiveSessionId();
     console.log("📂 Active session ID:", sessionId);
     if (sessionId === null) {
       console.error("❌ No active session found");
@@ -247,6 +248,9 @@ export const handleFacioMatcherAlert = async (req, res) => {
         drone: {
           connect: { id: drone.id },
         },
+        session: {
+          connect: { id: sessionId },
+        },
       },
     });
 
@@ -345,6 +349,26 @@ export async function getAlertById(req, res) {
     res.status(200).json({ status: true, data: alert });
   } catch (err) {
     console.error("Error at controllers/alertController/getAlertById:", err);
+    res.status(500).json({ status: false, message: "Internal server error" });
+  }
+}
+
+export async function getAlertsBySessionId(req, res) {
+  const sessionId = parseInt(req.params.sessionId, 10);
+  if (isNaN(sessionId)) {
+    return res
+      .status(400)
+      .json({ status: false, message: "Invalid session ID" });
+  }
+
+  try {
+    const alerts = await prisma.alert.findMany({
+      where: { sessionId },
+      orderBy: { createdAt: "desc" },
+    });
+    res.status(200).json({ status: true, data: alerts });
+  } catch (err) {
+    console.error("Error fetching alerts for session:", err);
     res.status(500).json({ status: false, message: "Internal server error" });
   }
 }

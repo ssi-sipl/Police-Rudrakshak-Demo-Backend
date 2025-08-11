@@ -5,6 +5,7 @@ import {
   getAlertById,
   getAlerts,
   getAlertsByDroneId,
+  getAlertsBySessionId,
   handleFacioMatcherAlert,
 } from "../controllers/alertController.js";
 
@@ -16,5 +17,6 @@ router.get("/", getAlerts);
 router.get("/drone/:droneId", getAlertsByDroneId);
 router.delete("/", deleteAllAlert);
 router.get("/:id", getAlertById);
+router.get("/session/:sessionId", getAlertsBySessionId);
 
 export default router;
