@@ -9,7 +9,10 @@ import processRouter from "./routes/processRouter.js";
 import droneRouter from "./routes/droneRouter.js";
 import areaRouter from "./routes/areaRouter.js";
 import sensorRouter from "./routes/sensorRouter.js";
+import sessionRoutes from "./routes/sessionRoutes.js";
 import "./lib/mqttclient.js";
+import { initActiveSession } from "./lib/sessionManager.js";
+await initActiveSession();
 
 const app = express();
 const server = http.createServer(app);
@@ -25,6 +28,7 @@ app.use("/api/process", processRouter);
 app.use("/api/drones", droneRouter);
 app.use("/api/areas", areaRouter);
 app.use("/api/sensors", sensorRouter);
+app.use("/api/sessions", sessionRoutes);
 
 // WebSocket
 setupWebSocket(server);

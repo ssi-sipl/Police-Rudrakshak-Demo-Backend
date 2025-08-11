@@ -2,6 +2,7 @@ import prisma from "../lib/prisma.js";
 import { supabase } from "../lib/supabase.js";
 import { broadcastAlert } from "../lib/websocket.js";
 import { v4 as uuidv4 } from "uuid";
+import { getActiveSessionId } from "../lib/sessionManager.js";
 
 export const createAlert = async (req, res) => {
   try {
@@ -118,6 +119,23 @@ export const createAlert = async (req, res) => {
 };
 
 export const handleFacioMatcherAlert = async (req, res) => {
+  try {
+    const sessionId = await getActiveSessionId();
+    console.log("📂 Active session ID:", sessionId);
+    if (sessionId === null) {
+      console.error("❌ No active session found");
+      return res.status(400).json({
+        status: false,
+        message: "Please start a session before creating an alert",
+      });
+    }
+  } catch (err) {
+    console.error(
+      "❌ Error in alertController/handleFacioMatcherAlert : (Error fetching the active session):",
+      err
+    );
+    return;
+  }
   try {
     console.log("🚁 Handling FacioMatcher alert for drone ID:", req.params);
     if (!req.body) {

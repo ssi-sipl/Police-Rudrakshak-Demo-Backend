@@ -6,6 +6,7 @@ import { supabase } from "./supabase.js";
 import path from "path";
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
+import { getActiveSessionId } from "./sessionManager.js";
 
 const {
   MQTT_BROKER_URL,
@@ -49,6 +50,21 @@ client.on("connect", () => {
 client.on("message", async (topic, message) => {
   if (topic === MQTT_BROKER_TOPIC) {
     // Handle alert messages
+    try {
+      const sessionId = await getActiveSessionId();
+      console.log("📂 Active session ID:", sessionId);
+      if (sessionId === null) {
+        console.error("❌ No active session found. Cannot process alert.");
+        return;
+      }
+    } catch (err) {
+      console.error(
+        "❌ Error in MQTT message handler (Error fetching the active session):",
+        err
+      );
+      return;
+    }
+
     try {
       // Step 1: Read metadata length
       let metadataLength;
